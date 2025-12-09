@@ -1,0 +1,117 @@
+openapi: 3.0.3
+info:
+  title: MxM - Gestor de Pagos
+  version: 1.0.0
+  description: API para autenticación, generación de transacciones y consulta de estado de pagos del sistema MxM.
+
+servers:
+  - url: https://mxm/api
+
+paths:
+  /auth:
+    post:
+      summary: Autenticación
+      description: Obtiene un token para utilizar el gestor de pagos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombreSistema
+                - claveSistema
+              properties:
+                nombreSistema:
+                  type: string
+                claveSistema:
+                  type: string
+      responses:
+        "200":
+          description: Token generado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /genTransc:
+    post:
+      summary: Generar Transacción
+      description: Crea una transacción de pago y devuelve la URL de inicio del flujo de pago.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - urlRedireccion
+                - tasaCodigo
+              properties:
+                urlRedireccion:
+                  type: string
+                tasaCodigo:
+                  type: string
+      responses:
+        "200":
+          description: Transacción generada correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  urlTransaccion:
+                    type: string
+                  numeroTransaccion:
+                    type: integer
+
+  /consultaPago:
+    get:
+      summary: Consultar Estado de Pago
+      description: Devuelve el estado actual de una transacción de pago.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: numeroTransaccion
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Estado del pago
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EstadoPagoResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    EstadoPagoEnum:
+      type: string
+      enum: [acreditado, pendiente, fallido, cancelado]
+
+    EstadoPagoResponse:
+      type: object
+      properties:
+        estadoPago:
+          $ref: "#/components/schemas/EstadoPagoEnum"
+        reciboLink:
+          type: string
+          nullable: true
+        pagoConfirmado:
+          type: boolean
+        fechaConfirmacion:
+          type: string
+          format: date-time
+          nullable: true
